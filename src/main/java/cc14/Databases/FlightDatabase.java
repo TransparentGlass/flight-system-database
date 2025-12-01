@@ -3,7 +3,7 @@ package cc14.Databases;
 import java.util.ArrayList;
 import java.util.List;
 
-import cc14.Flight;
+import cc14.models.Flight;
 
 public class FlightDatabase {
 

@@ -2,7 +2,7 @@ package cc14.Databases;
 
 import java.util.ArrayList;
 
-import cc14.Passenger;
+import cc14.models.Passenger;
 
 public class PassengerDatabase {
 

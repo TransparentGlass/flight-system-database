@@ -2,10 +2,10 @@ package cc14.Databases;
 
 import java.util.ArrayList;
 
-import cc14.Booking;
-import cc14.Flight;
-import cc14.FlightTime;
-import cc14.Passenger;
+import cc14.UI.FlightTime;
+import cc14.models.Booking;
+import cc14.models.Flight;
+import cc14.models.Passenger;
 
 public class BookingDatabase {
 
