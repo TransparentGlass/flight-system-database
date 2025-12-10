@@ -8,7 +8,7 @@ import cc14.models.Flight;
 import cc14.models.Passenger;
 
 public class BookingDatabase {
-
+    //TODO: add status (e.g., active, canceled)
     private static final ArrayList<Booking> bookings = new ArrayList<>();
 
     public static void addBooking(Booking b) {
