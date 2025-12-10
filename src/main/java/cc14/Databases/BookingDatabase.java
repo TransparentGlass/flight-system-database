@@ -11,6 +11,7 @@ public class BookingDatabase {
     //TODO: add status (e.g., active, canceled)
     private static final ArrayList<Booking> bookings = new ArrayList<>();
 
+    
     public static void addBooking(Booking b) {
         bookings.add(b);
     }
@@ -28,7 +29,7 @@ public class BookingDatabase {
         Booking target = null;
         for (Booking b : bookings) {
             if (b.getPassenger() == p &&
-                b.getFlight().getFlightNumber().equalsIgnoreCase(flightNumber)) {
+                b.getFlight().getFlightNumber().equalsIgnoreCase(flightNumber)) {   
                 target = b;
                 break;
             }

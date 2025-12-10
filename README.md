@@ -98,7 +98,7 @@ They only need to:
  - Install Tailscale and join your tailnet.
  - Get your own 100.x.x.x Tailscale IP automatically.
  - Use your server’s Tailscale IP in their connection string in the cmd:
-    mysql -h <100.108.168.84> -u projectuser -p
+    mysql -h <your-tail-scale-ip> -u projectuser -p
 
 or in jbdc:
 String url = "jdbc:mysql://<your-tailscale-ip>:3306/projectdb";
