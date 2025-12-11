@@ -7,7 +7,6 @@ import cc14.models.Passenger;
 //This is passenger login databse
 
 public class PassengerDatabase {
-
     private static final ArrayList<Passenger> passengers = new ArrayList<>();
 
     public static boolean register(String username, String password, String fullName) {

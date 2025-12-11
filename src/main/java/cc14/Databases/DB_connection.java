@@ -10,10 +10,20 @@ import java.sql.Statement;
 import javax.naming.spi.DirStateFactory.Result;
 
 
-public class dbconnection {
-    public Connection connect() {
+public class DB_connection {
+    private static String IP_address = "100.108.168.84";
+
+    public static Connection connect() {
         // Placeholder for database connection logic
-        String url = "jdbc:mysql://100.108.168.84:3306/airport_system_db_test";
+        String database = "airport_system_db_test";
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append("jdbc:mysql://");
+        sb.append(IP_address);
+        sb.append(":3306/");
+        sb.append(database);
+
+        String url = sb.toString();
         String user = "projectuser";
         String password = "strongpassword";
 
@@ -23,27 +33,32 @@ public class dbconnection {
             return conn;
         } catch (SQLException e) {
             System.out.println("Connection failed: " + e.getMessage());
+            return null;
         }
+    }
 
-        
-        return null;
+    public static void disconnect(Connection conn) {
+        if (conn != null) {
+            try {
+                conn.close();
+                System.out.println("Disconnected from the database.");
+            } catch (SQLException e) {
+                System.out.println("Disconnection failed: " + e.getMessage());
+            }
+        }
+    }
 
-
+    public static void changeIP(String newIP) {
+        IP_address = newIP;
     }
 
     public static void main(String[] args) {
-        
-        test_add_airplane();
-
-
     }
 
+    /*
     public void test_flight(){
         dbconnection dbConn = new dbconnection();
-        Connection conn = dbConn.connect();
-
-        Statement stmt = null;
-        ResultSet rs = null;
+        Connection conn = dbconnection.connect();
         try {
             String sql = "INSERT into flights_table (flight_ID, airplane_ID, origin, destination, departure_time, arrival_time, base_fare) VALUES (?, ?, ?, ?, ?, ?, ? );";
             PreparedStatement pstmt = conn.prepareStatement(sql);
@@ -65,7 +80,9 @@ public class dbconnection {
             System.out.println("Query failed: " + e.getMessage());
         }
     }
+     */
 
+    /*
     public static void test_add_airplane(){
         dbconnection dbConn = new dbconnection();
         Connection conn = dbConn.connect();
@@ -84,5 +101,8 @@ public class dbconnection {
 
         } catch (Exception e) {
             System.out.println("Query failed: " + e.getMessage());
-        }}
+        }
+    }
+        */
+
 }
