@@ -4,11 +4,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Objects;
 
-import cc14.UI.FlightTime;
 import cc14.models.Booking;
 import cc14.models.Flight;
 import cc14.models.Passenger;
@@ -33,6 +30,7 @@ public class BookingDatabase {
             Connection Database = DB_connection.connect();
 
             String sql = "INSERT INTO bookings_table (User_ID, flight_ID, status) VALUES (?, ?, ?)";
+            String availableSeats_sql = "UPDATE flights_table SET available_seats = ? WHERE flight_id = ?";
 
             PreparedStatement pstmt = Database.prepareStatement(sql);
             pstmt.setInt(1, passenger_id);
@@ -43,8 +41,15 @@ public class BookingDatabase {
 
             pstmt.setString(3, BookingStatus.ACTIVE.name());
             pstmt.executeUpdate();
-
             System.out.println("Booking added successfully.");
+
+            pstmt = Database.prepareStatement(availableSeats_sql);
+            pstmt.setInt(1, getFlight(flight_id).getAvailableSeats() - 1);
+            pstmt.setInt(2, flight_id);
+            pstmt.executeUpdate();
+            System.out.println("Available seats--" + "AVAIALBLE SEATS = " + (getFlight(flight_id).getAvailableSeats() - 1));
+
+            
             return 1; // success
 
         } catch (SQLException e) {
@@ -88,6 +93,7 @@ public class BookingDatabase {
     public static boolean cancelBooking(int reservation_ID) {
 
         String sql = "UPDATE bookings_table SET status = ? WHERE reservation_ID = ?";
+        String availableSeats_sql = "UPDATE flights_table SET available_seats = ?  WHERE flight_id = (SELECT flight_id FROM bookings_table WHERE reservation_id = ?)";
         try {
             Connection Database = DB_connection.connect();
             PreparedStatement pstmt = Database.prepareStatement(sql);
@@ -95,7 +101,16 @@ public class BookingDatabase {
             pstmt.setInt(2, reservation_ID);
             pstmt.executeUpdate();
 
+            pstmt = Database.prepareStatement(availableSeats_sql);
+            pstmt.setInt(1, getAvailableSeatsFromBooking(reservation_ID) + 1);
+            pstmt.setInt(2, reservation_ID);
+            pstmt.executeUpdate();
+
+
+
             System.out.println("Successfully cancelled: " + reservation_ID);
+
+
             return true;
 
         } catch (SQLException e) {
@@ -106,6 +121,27 @@ public class BookingDatabase {
 
     public static boolean deleteBooking(int reservation_ID) {
         return false;
+    }
+
+    public static int getAvailableSeatsFromBooking(int reservation_ID){
+
+        String sql = "SELECT available_seats from flights_table where flight_ID = (SELECT flight_ID from bookings_table where reservation_ID = ?)";
+        try {
+            Connection Database = DB_connection.connect();
+
+            PreparedStatement pstmt = Database.prepareStatement(sql);
+            pstmt.setInt(1, reservation_ID);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()){
+                System.out.println("Successfully retreived available seats");
+                return rs.getInt("available_seats");
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error retrieving passenger ID: " + e.getMessage());
+        }
+
+        return -1;
     }
 
     // public static ArrayList<Booking> getAllBookings() {

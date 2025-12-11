@@ -82,13 +82,14 @@ public class bookingDatabaseTest {
         Passenger p = new Passenger("default", "strongpassword", "AJ Thomas J. Sualan");
         Flight f = FlightDatabase.findFlight("MNL101");
         String timestamp = "2024-06-01 10:00:00";
+        int booking = createBooking(p, f);
+        assert(booking == 1);
 
-        assert(createBooking(p, f) == 1);
     }
 
     @Test
     public void test_cancelBooking(){
-        int id = 3;
+        int id = 9;
         assertTrue(cancelBooking(id));
     }
 
