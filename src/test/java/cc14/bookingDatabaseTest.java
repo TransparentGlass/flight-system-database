@@ -71,7 +71,7 @@ public class bookingDatabaseTest {
         Flight f = FlightDatabase.findFlight("MNL101");
         String timestamp = "2024-06-01 10:00:00";
 
-        assert(BookingDatabase.CreateBooking(p, f, timestamp) == 1);
+        assert(BookingDatabase.createBooking(p, f) == 1);
     }
 
 }

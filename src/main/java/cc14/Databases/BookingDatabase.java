@@ -21,8 +21,8 @@ public class BookingDatabase {
     }
 
     // TODO: make this SQL based
-    public static int CreateBooking(Passenger p, Flight f, String timestamp) {
-        Booking booked_flight = new Booking(p, f, timestamp);
+    public static int createBooking(Passenger p, Flight f) {
+        Booking booked_flight = new Booking(p, f, "");
 
         // get passenger ID by username
         int passenger_id = getPassengerID(booked_flight.getPassenger());
