@@ -36,6 +36,7 @@ public class CancelBookingWindow extends JFrame {
         add(noBtn);
 
         yesBtn.addActionListener(e -> {
+            //TODO: change this so that we actually get the reservation ID rather than the passenger and flight_num
             boolean ok = BookingDatabase.cancelBooking(passenger, flightNumber);
             if (ok) {
                 JOptionPane.showMessageDialog(this, "Booking canceled.");
@@ -49,4 +50,5 @@ public class CancelBookingWindow extends JFrame {
 
         setVisible(true);
     }
+
 }

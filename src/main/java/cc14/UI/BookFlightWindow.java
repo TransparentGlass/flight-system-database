@@ -1,5 +1,7 @@
 package cc14.UI;
 
+import static cc14.Databases.BookingDatabase.createBooking;
+
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import javax.swing.*;
@@ -67,9 +69,7 @@ public class BookFlightWindow extends JFrame {
                 return;
             }
 
-            String ts = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
-            Booking booking = new Booking(passenger, flight, ts);
-            BookingDatabase.addBooking(booking);
+            createBooking(passenger, flight);
 
             JOptionPane.showMessageDialog(this,
                     "Booking successful!\nTimestamp: " + ts,

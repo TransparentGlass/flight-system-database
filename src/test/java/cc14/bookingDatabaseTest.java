@@ -15,6 +15,7 @@ import cc14.models.Passenger;
 import static cc14.Databases.BookingDatabase.cancelBooking;
 import static cc14.Databases.BookingDatabase.createBooking;
 import static cc14.Databases.BookingDatabase.getAirplaneName;
+import static cc14.Databases.BookingDatabase.getAllBookings;
 import static cc14.Databases.BookingDatabase.getBookingsFor;
 import static cc14.Databases.BookingDatabase.getFlight;
 import static cc14.Databases.BookingDatabase.getFlightID;
@@ -122,6 +123,26 @@ public class bookingDatabaseTest {
             assert(bookings.getFlight().getFlightNumber().equals("MNL101"));
             assert(bookings.getTimestamp().equals("2025-12-11 22:18:01") || bookings.getTimestamp().equals("2025-12-12 00:22:57"));
         }
+    }
+
+    @Test
+    public void test_getBookings(){
+        ArrayList<Booking> b = getAllBookings();
+
+        for (Booking x: b){
+            assert(x.getPassenger().getFullName().equals("AJ Thomas J. Sualan"));
+        }
+
+    }
+
+    @Test
+    public void test_findBookings(){
+        Passenger p = new Passenger("default", "strongpassword", "AJ Thomas J. Sualan");
+        Flight f = FlightDatabase.findFlight("MNL101");
+        String fl_num = "MNL101";
+        String timestamp = "2024-06-01 10:00:00";
+        ArrayList<Integer> booking = findBookings(p, fl_num);
+        assert(booking != null);
     }
 
 }

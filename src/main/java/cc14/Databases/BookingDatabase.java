@@ -6,18 +6,19 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
+import cc14.UI.FlightTime;
 import cc14.models.Booking;
 import cc14.models.Flight;
 import cc14.models.Passenger;
 
 public class BookingDatabase {
-    // TODO: add status (e.g., active, canceled)
     private static enum BookingStatus {
         ACTIVE,
         PROCESSING,
         CANCELLED
     }
 
+    // this fails to function due to flights (other than MNL101) not being added yet
     public static int createBooking(Passenger p, Flight f) {
         Booking booked_flight = new Booking(p, f, "");
 
@@ -47,9 +48,9 @@ public class BookingDatabase {
             pstmt.setInt(1, getFlight(flight_id).getAvailableSeats() - 1);
             pstmt.setInt(2, flight_id);
             pstmt.executeUpdate();
-            System.out.println("Available seats--" + "AVAIALBLE SEATS = " + (getFlight(flight_id).getAvailableSeats() - 1));
+            System.out.println(
+                    "Available seats--" + "AVAIALBLE SEATS = " + (getFlight(flight_id).getAvailableSeats() - 1));
 
-            
             return 1; // success
 
         } catch (SQLException e) {
@@ -106,10 +107,7 @@ public class BookingDatabase {
             pstmt.setInt(2, reservation_ID);
             pstmt.executeUpdate();
 
-
-
             System.out.println("Successfully cancelled: " + reservation_ID);
-
 
             return true;
 
@@ -123,7 +121,7 @@ public class BookingDatabase {
         return false;
     }
 
-    public static int getAvailableSeatsFromBooking(int reservation_ID){
+    public static int getAvailableSeatsFromBooking(int reservation_ID) {
 
         String sql = "SELECT available_seats from flights_table where flight_ID = (SELECT flight_ID from bookings_table where reservation_ID = ?)";
         try {
@@ -132,7 +130,7 @@ public class BookingDatabase {
             PreparedStatement pstmt = Database.prepareStatement(sql);
             pstmt.setInt(1, reservation_ID);
             ResultSet rs = pstmt.executeQuery();
-            if (rs.next()){
+            if (rs.next()) {
                 System.out.println("Successfully retreived available seats");
                 return rs.getInt("available_seats");
             }
@@ -144,32 +142,86 @@ public class BookingDatabase {
         return -1;
     }
 
-    // public static ArrayList<Booking> getAllBookings() {
-    // return bookings;
-    // } // conflict check
+    // //Multiple flights with the same time (i.e. group travel). BROKEN AS FUCK
+    // // TODO: try to fix this
+    // DONT TOUCH!!
+    // public static ArrayList<Integer> findBookings(Passenger p, String
+    // flight_num){
+    // ArrayList<Integer> list = new ArrayList<>();
 
-    // public static boolean hasConflict(Passenger p, Flight newFlight) {
-    // ArrayList<Booking> existing = getBookingsFor(p);
+    // String sql = "SELECT * FROM bookings_table WHERE flight_number = ? and
+    // user_id = ?";
+    // try {
+    // Connection Database = DB_connection.connect();
+    // PreparedStatement pstmt = Database.prepareStatement(sql);
+    // pstmt.setInt(2, getPassengerID(p));
+    // pstmt.setString(1, flight_num);
+    // ResultSet rs = pstmt.executeQuery();
+    // while (rs.next()) {
+    // int res_id = rs.getInt("reservation_ID");
+    // list.add(res_id);
+    // }
+    // return list;
 
-    // long newDep = FlightTime.toMillis(newFlight.getDepartureTime());
-    // long newArr = FlightTime.toMillis(newFlight.getArrivalTime());
-
-    // for (Booking b : existing) {
-    // Flight f = b.getFlight();
-
-    // long dep = FlightTime.toMillis(f.getDepartureTime());
-    // long arr = FlightTime.toMillis(f.getArrivalTime());
-
-    // boolean overlap =
-    // (newDep >= dep && newDep <= arr) ||
-    // (newArr >= dep && newArr <= arr);
-
-    // if (overlap)
-    // return true;
+    // } catch (SQLException e) {
+    // System.out.println("Error finding bookings: " + e.getMessage());
+    // }
+    // return null;
     // }
 
-    // return false;
-    // }
+    public static ArrayList<Booking> getAllBookings() {
+
+        ArrayList<Booking> list = new ArrayList<>();
+
+        String sql = "SELECT * from bookings_table";
+        try {
+            Connection Database = DB_connection.connect();
+            PreparedStatement pstmt = Database.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                int p_id = rs.getInt("user_ID");
+                int r_id = rs.getInt("reservation_ID");
+                int f_id = rs.getInt("flight_ID");
+
+                Flight f = getFlight(f_id);
+                String ts = getTimestamp(r_id);
+                Passenger p = getPassenger(p_id);
+
+                Booking b = new Booking(p, f, ts);
+                list.add(b);
+                System.out.println(b.getFlight().getFlightNumber() + " " + b.getPassenger().getFullName());
+            }
+            return list;
+
+        } catch (SQLException e) {
+            System.out.println("No bookings or error: " + e.getMessage());
+        }
+        return null;
+    } 
+    // conflict check
+    //TODO: test hasConflict with the new implementation.
+    public static boolean hasConflict(Passenger p, Flight newFlight) {
+        ArrayList<Booking> existing = getBookingsFor(p);
+
+        long newDep = FlightTime.toMillis(newFlight.getDepartureTime());
+        long newArr = FlightTime.toMillis(newFlight.getArrivalTime());
+
+        for (Booking b : existing) {
+            Flight f = b.getFlight();
+
+            long dep = FlightTime.toMillis(f.getDepartureTime());
+            long arr = FlightTime.toMillis(f.getArrivalTime());
+
+            boolean overlap = (newDep >= dep && newDep <= arr) ||
+                    (newArr >= dep && newArr <= arr);
+
+            if (overlap)
+                return true;
+        }
+
+        return false;
+    }
 
     public static int getPassengerID(Passenger p) {
         if (p == null)
