@@ -12,7 +12,7 @@ public class Booking {
         this.timestamp = timestamp;
     }
 
-    public Passenger getPassenger() { return passenger; }
-    public Flight getFlight() { return flight; }
-    public String getTimestamp() { return timestamp; }
+    public Passenger getPassenger() { return this.passenger; }
+    public Flight getFlight() { return this.flight; }
+    public String getTimestamp() { return this.timestamp; }
 }
