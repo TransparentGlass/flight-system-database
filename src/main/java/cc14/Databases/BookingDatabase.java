@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 
 import cc14.UI.FlightTime;
@@ -19,8 +20,9 @@ public class BookingDatabase {
     }
 
     // this fails to function due to flights (other than MNL101) not being added yet
-    public static int createBooking(Passenger p, Flight f) {
-        Booking booked_flight = new Booking(p, f, "");
+    public static Booking createBooking(Passenger p, Flight f) {
+        String ts = new Timestamp(System.currentTimeMillis()).toString();
+        Booking booked_flight = new Booking(p, f, ts);
 
         // get passenger ID by username
         int passenger_id = getPassengerID(booked_flight.getPassenger());
@@ -30,7 +32,7 @@ public class BookingDatabase {
         try {
             Connection Database = DB_connection.connect();
 
-            String sql = "INSERT INTO bookings_table (User_ID, flight_ID, status) VALUES (?, ?, ?)";
+            String sql = "INSERT INTO bookings_table (User_ID, flight_ID, status) VALUES (?, ?)";
             String availableSeats_sql = "UPDATE flights_table SET available_seats = ? WHERE flight_id = ?";
 
             PreparedStatement pstmt = Database.prepareStatement(sql);
@@ -51,13 +53,13 @@ public class BookingDatabase {
             System.out.println(
                     "Available seats--" + "AVAIALBLE SEATS = " + (getFlight(flight_id).getAvailableSeats() - 1));
 
-            return 1; // success
+            return booked_flight; // success
 
         } catch (SQLException e) {
             System.out.println("Error adding booking: " + e.getMessage());
         }
 
-        return -1; // failure
+        return null; // failure
     }
 
     public static ArrayList<Booking> getBookingsFor(Passenger p) {
@@ -142,32 +144,32 @@ public class BookingDatabase {
         return -1;
     }
 
-    // //Multiple flights with the same time (i.e. group travel). BROKEN AS FUCK
-    // // TODO: try to fix this
+    // Multiple flights with the same time (i.e. group travel). BROKEN AS FUCK
+    // TODO: try to fix this
     // DONT TOUCH!!
-    // public static ArrayList<Integer> findBookings(Passenger p, String
-    // flight_num){
-    // ArrayList<Integer> list = new ArrayList<>();
+    // lets assume only one flights per person.
+    public static int findBooking(Passenger p, String flight_num, String timestamp) {
 
-    // String sql = "SELECT * FROM bookings_table WHERE flight_number = ? and
-    // user_id = ?";
-    // try {
-    // Connection Database = DB_connection.connect();
-    // PreparedStatement pstmt = Database.prepareStatement(sql);
-    // pstmt.setInt(2, getPassengerID(p));
-    // pstmt.setString(1, flight_num);
-    // ResultSet rs = pstmt.executeQuery();
-    // while (rs.next()) {
-    // int res_id = rs.getInt("reservation_ID");
-    // list.add(res_id);
-    // }
-    // return list;
+        String sql = "SELECT reservation_ID FROM bookings_table WHERE flight_ID = ? and user_ID = ? and booking_time = ?";
 
-    // } catch (SQLException e) {
-    // System.out.println("Error finding bookings: " + e.getMessage());
-    // }
-    // return null;
-    // }
+        try {
+            Connection Database = DB_connection.connect();
+            PreparedStatement pstmt = Database.prepareStatement(sql);
+            pstmt.setInt(1, getFlightID(flight_num));
+            pstmt.setInt(2, getPassengerID(p));
+            pstmt.setString(3, timestamp);
+
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                int reservation_ID = rs.getInt("reservation_ID");
+                return reservation_ID;
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error finding bookings: " + e.getMessage());
+        }
+        return -1;
+    }
 
     public static ArrayList<Booking> getAllBookings() {
 
@@ -198,9 +200,10 @@ public class BookingDatabase {
             System.out.println("No bookings or error: " + e.getMessage());
         }
         return null;
-    } 
+    }
+
     // conflict check
-    //TODO: test hasConflict with the new implementation.
+    // TODO: test hasConflict with the new implementation.
     public static boolean hasConflict(Passenger p, Flight newFlight) {
         ArrayList<Booking> existing = getBookingsFor(p);
 
@@ -360,5 +363,28 @@ public class BookingDatabase {
         }
 
         return -1;
+    }
+
+    public static int getFlightID(String Flight_number){
+         if (Flight_number == null)
+            return -1;
+
+        String sql = "SELECT Flight_ID FROM Flights_table WHERE Flight_Number = ?";
+
+        try {
+            Connection Database = DB_connection.connect();
+            PreparedStatement pstmt = Database.prepareStatement(sql);
+            pstmt.setString(1, Flight_number);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("Flight_ID");
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error retrieving passenger ID: " + e.getMessage());
+        }
+
+        return -1;
+    
     }
 }

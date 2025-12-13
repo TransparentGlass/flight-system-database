@@ -1,13 +1,15 @@
 package cc14.UI;
 
+import static cc14.Databases.BookingDatabase.findBooking;
+import static cc14.Databases.BookingDatabase.*;
+
 import javax.swing.*;
 
-import cc14.Databases.BookingDatabase;
 import cc14.models.Passenger;
 
 public class CancelBookingWindow extends JFrame {
 
-    public CancelBookingWindow(Passenger passenger, String flightNumber) {
+    public CancelBookingWindow(Passenger passenger, String flightNumber, String timestamp) {
         Theme.applyNimbus();
         setTitle("Cancel Booking");
         setSize(400, 220);
@@ -36,8 +38,7 @@ public class CancelBookingWindow extends JFrame {
         add(noBtn);
 
         yesBtn.addActionListener(e -> {
-            //TODO: change this so that we actually get the reservation ID rather than the passenger and flight_num
-            boolean ok = BookingDatabase.cancelBooking(passenger, flightNumber);
+            boolean ok = cancelBooking(findBooking(passenger, flightNumber, timestamp));
             if (ok) {
                 JOptionPane.showMessageDialog(this, "Booking canceled.");
             } else {
@@ -50,5 +51,11 @@ public class CancelBookingWindow extends JFrame {
 
         setVisible(true);
     }
+
+    // public static void main(String[] args) {
+    //     SwingUtilities.invokeLater(() -> {
+    //         cancelBooking(8);
+    //     });
+    // }
 
 }

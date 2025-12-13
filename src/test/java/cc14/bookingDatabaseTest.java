@@ -12,7 +12,7 @@ import cc14.models.Booking;
 import cc14.models.Flight;
 import cc14.models.Passenger;
 
-import static cc14.Databases.BookingDatabase.cancelBooking;
+import static cc14.Databases.BookingDatabase.findBooking;
 import static cc14.Databases.BookingDatabase.createBooking;
 import static cc14.Databases.BookingDatabase.getAirplaneName;
 import static cc14.Databases.BookingDatabase.getAllBookings;
@@ -22,6 +22,7 @@ import static cc14.Databases.BookingDatabase.getFlightID;
 import static cc14.Databases.BookingDatabase.getPassenger;
 import static cc14.Databases.BookingDatabase.getPassengerID;
 import static cc14.Databases.BookingDatabase.getTimestamp;
+import static cc14.Databases.BookingDatabase.cancelBooking;
 
 public class bookingDatabaseTest {
 
@@ -83,14 +84,14 @@ public class bookingDatabaseTest {
         Passenger p = new Passenger("default", "strongpassword", "AJ Thomas J. Sualan");
         Flight f = FlightDatabase.findFlight("MNL101");
         String timestamp = "2024-06-01 10:00:00";
-        int booking = createBooking(p, f);
-        assert(booking == 1);
+        Booking booking = createBooking(p, f);
+        assert(booking != null);
 
     }
 
     @Test
     public void test_cancelBooking(){
-        int id = 9;
+        int id = 12;
         assertTrue(cancelBooking(id));
     }
 
@@ -107,7 +108,7 @@ public class bookingDatabaseTest {
 
     @Test
     public void test_getTimestamps(){
-        assert(getTimestamp(3).equals("2025-12-11 22:18:01"));
+        assert(getTimestamp(12).equals("2025-12-12 03:26:50"));
     }
 
     @Test
@@ -140,9 +141,11 @@ public class bookingDatabaseTest {
         Passenger p = new Passenger("default", "strongpassword", "AJ Thomas J. Sualan");
         Flight f = FlightDatabase.findFlight("MNL101");
         String fl_num = "MNL101";
-        String timestamp = "2024-06-01 10:00:00";
-        ArrayList<Integer> booking = findBookings(p, fl_num);
-        assert(booking != null);
+        String timestamp = "2025-12-12 03:26:50";
+        int reservation_id = findBooking(p, fl_num, timestamp);
+        System.out.print(reservation_id);
+        assert(reservation_id == 12);
+
     }
 
 }
