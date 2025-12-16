@@ -1,5 +1,7 @@
 package cc14.UI;
 
+import static cc14.Databases.BookingDatabase.getPassenger;
+
 import javax.swing.*;
 
 import cc14.Databases.PassengerDatabase;
@@ -73,8 +75,8 @@ public class PassengerLogin extends JFrame {
         String u = usernameField.getText().trim();
         String p = new String(passwordField.getPassword()).trim();
 
-        Passenger passenger = PassengerDatabase.validatePassenger(u, p);
-        if (passenger == null) {
+        int passenger = PassengerDatabase.passwordCheck(u, p);
+        if (passenger == -1) {
             JOptionPane.showMessageDialog(this,
                     "Incorrect username or password.",
                     "Login Failed",
@@ -84,6 +86,6 @@ public class PassengerLogin extends JFrame {
 
         JOptionPane.showMessageDialog(this, "Login successful!");
         dispose();
-        new PassengerDashboard(passenger);
+        new PassengerDashboard(getPassenger(passenger));
     }
 }

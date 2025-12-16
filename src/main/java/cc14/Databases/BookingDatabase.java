@@ -28,67 +28,77 @@ public class BookingDatabase {
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
         Booking booked_flight = new Booking(p, f, ts);
-
-        // get passenger ID by username
         int passenger_id = getPassengerID(booked_flight.getPassenger());
-
-        // get flight ID by flight number
         int flight_id = getFlightID(booked_flight.getFlight());
 
-        try (Connection db = DB_connection.connect()) {
-            ;
-            db.setAutoCommit(false); // 🚨 START TRANSACTION
-            int availableSeats;
-            String locksql = "SELECT available_seats FROM flights_table WHERE flight_ID = ? FOR UPDATE";
-            try (PreparedStatement ps = db.prepareStatement(locksql)) {
-                ps.setInt(1, flight_id);
-                ResultSet rs = ps.executeQuery();
+        int maxRetries = 3;
+        int attempts = 0;
 
-                if (!rs.next()) {
-                    db.rollback();
-                    return null;
-                }
-
-                availableSeats = rs.getInt("available_seats");
-                if (availableSeats <= 0) {
-                    db.rollback();
-                    return null;
-                }
-
-            }
-
-            String insertSql = "INSERT INTO bookings_table (User_ID, flight_ID, booking_time, status) VALUES (?, ?, ?, ?)";
-            try (PreparedStatement insertStmt = db.prepareStatement(insertSql)) {
-
-                insertStmt.setInt(1, passenger_id);
-                insertStmt.setInt(2, flight_id);
-                insertStmt.setString(3, ts);
-                insertStmt.setString(4, BookingStatus.ACTIVE.name());
-                insertStmt.executeUpdate();
-            }
-
-            int newSeats = getFlight(flight_id).getAvailableSeats() - 1;
-
-            String updateSeatsSql = "UPDATE flights_table SET available_seats = available_seats - 1 WHERE flight_ID = ?";
-            try (PreparedStatement seatStmt = db.prepareStatement(updateSeatsSql)) {
-
-                seatStmt.setInt(1, flight_id);
-                seatStmt.executeUpdate();
-            }
-
-            db.commit(); // ✅ SUCCESS
-
-            return booked_flight;
-
-        } catch (SQLException e) {
-            System.out.println("Error adding booking: " + e.getMessage());
+        while (attempts < maxRetries) {
+            attempts++;
             try (Connection db = DB_connection.connect()) {
-                db.rollback();
-            } catch (SQLException ignored) {
+                db.setAutoCommit(false);
+                db.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
+
+                // 1. Lock flight row and get available seats
+                int availableSeats;
+                String locksql = "SELECT available_seats FROM flights_table WHERE flight_ID = ? FOR UPDATE";
+                try (PreparedStatement ps = db.prepareStatement(locksql)) {
+                    ps.setInt(1, flight_id);
+                    ResultSet rs = ps.executeQuery();
+
+                    if (!rs.next()) {
+                        db.rollback();
+                        return null;
+                    }
+
+                    availableSeats = rs.getInt("available_seats");
+                    if (availableSeats <= 0) {
+                        db.rollback();
+                        return null;
+                    }
+                }
+
+                // 2. Insert booking
+                String insertSql = "INSERT INTO bookings_table (User_ID, flight_ID, booking_time, status) VALUES (?, ?, ?, ?)";
+                try (PreparedStatement insertStmt = db.prepareStatement(insertSql)) {
+                    insertStmt.setInt(1, passenger_id);
+                    insertStmt.setInt(2, flight_id);
+                    insertStmt.setString(3, ts);
+                    insertStmt.setString(4, BookingStatus.ACTIVE.name());
+                    insertStmt.executeUpdate();
+                }
+
+                // 3. Update available seats (use the locked row count)
+                String updateSeatsSql = "UPDATE flights_table SET available_seats = available_seats - 1 WHERE flight_ID = ?";
+                try (PreparedStatement seatStmt = db.prepareStatement(updateSeatsSql)) {
+                    seatStmt.setInt(1, flight_id);
+                    seatStmt.executeUpdate();
+                }
+
+                db.commit(); // ✅ transaction successful
+                return booked_flight;
+
+            } catch (SQLException e) {
+                String sqlState = e.getSQLState() == null ? "" : e.getSQLState();
+
+                // Retry on deadlock (MySQL: 40001) or lock wait timeout
+                if (sqlState.equals("40001") || e.getMessage().toLowerCase().contains("deadlock")) {
+                    System.out.println("Transaction conflict, retrying attempt " + attempts + "...");
+                    try {
+                        Thread.sleep(50);
+                    } catch (InterruptedException ignored) {
+                    }
+                    continue; // retry
+                }
+
+                e.printStackTrace();
+                return null; // fail immediately for other errors
             }
         }
 
-        return null; // failure
+        System.out.println("Max retries reached, booking failed.");
+        return null;
     }
 
     public static ArrayList<Booking> getBookingsFor(Passenger p) {

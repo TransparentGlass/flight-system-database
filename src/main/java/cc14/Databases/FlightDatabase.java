@@ -76,7 +76,7 @@ public class FlightDatabase {
                 try {
                     db.rollback(); // ✅ REQUIRED
                 } catch (SQLException ignored) {
-                    return -1;
+                    return -1;  
                 }
             }
         }

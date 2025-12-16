@@ -9,10 +9,11 @@ import static cc14.Databases.PassengerDatabase.*;
 
 public class passengerDB_test {
     
+    @Test
     public void registerTest(){
-        String username = "rar";
-        String password = "rar";
-        String fullname = "rar";
+        String username = "test";
+        String password = "test";
+        String fullname = "test";
         assert(PassengerDatabase.register(username, password, fullname) == true);
     }
 
@@ -29,16 +30,16 @@ public class passengerDB_test {
 
     @Test
     public void userExists(){
-        assertTrue(isUserExist("rar"));
+        assertTrue(isUserExist("default"));
     }
 
     @Test
-    public void validatePassenger_test(){
-        String username = "rar1";
-        String password = "rar1";
+    public void passwordCheck_test(){
+        String username = "test";
+        String password = "test";
         
-        assert(validatePassenger(username, password) == null);
-        assert(validatePassenger("rar", "rar") != null);
+        assert(passwordCheck(username, password) == 12);
+        assert(passwordCheck("rar", "rar") != 12);
     }
 
     @Test
