@@ -42,6 +42,7 @@ public class ViewBookingsWindow extends JFrame {
         if (list.isEmpty()) {
             area.append("You have no bookings.\n");
         } else {
+            long startTime = System.currentTimeMillis();
             for (Booking b : list) {
                 Flight f = b.getFlight();
                 area.append("Passenger: " + passenger.getFullName() + "\n");
@@ -52,6 +53,9 @@ public class ViewBookingsWindow extends JFrame {
                 area.append("Booked at: " + b.getTimestamp() + "\n");
                 area.append("-----------------------------------------------\n");
             }
+            // call your method or query
+            long endTime = System.currentTimeMillis();
+            System.out.println("View bookings Execution time: " + (endTime - startTime) + " ms");
         }
 
         setVisible(true);

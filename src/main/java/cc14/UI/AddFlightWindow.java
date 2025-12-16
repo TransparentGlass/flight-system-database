@@ -82,6 +82,8 @@ public class AddFlightWindow extends JFrame {
 
         addBtn.addActionListener(e -> {
             try {
+                long startTime = System.currentTimeMillis();
+
                 FlightDatabase.createFlight(
                         fNoField.getText().trim(),
                         originField.getText().trim(),
@@ -89,14 +91,15 @@ public class AddFlightWindow extends JFrame {
                         depField.getText().trim(),
                         arrField.getText().trim(),
                         Integer.parseInt(seatField.getText().trim()),
-                        Double.parseDouble(priceField.getText().trim())
-                );
+                        Double.parseDouble(priceField.getText().trim()));
 
                 JOptionPane.showMessageDialog(this,
                         "Flight added successfully!",
                         "Success",
                         JOptionPane.INFORMATION_MESSAGE);
-
+                // call your method or query
+                long endTime = System.currentTimeMillis();
+                System.out.println("Execution time: " + (endTime - startTime) + " ms");
                 dispose();
 
             } catch (Exception ex) {
@@ -104,6 +107,7 @@ public class AddFlightWindow extends JFrame {
                         "Invalid input.\nPlease check all fields.",
                         "Error",
                         JOptionPane.ERROR_MESSAGE);
+                // call your method or query
             }
         });
 

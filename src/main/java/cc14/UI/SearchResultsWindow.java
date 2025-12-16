@@ -46,13 +46,16 @@ public class SearchResultsWindow extends JFrame {
 
         List<Integer> flights = FlightDatabase.findFlightsByOrigin(origin);
         int y = 10;
+        long startTime = System.currentTimeMillis();
         for (int id : flights) {
             JPanel card = new JPanel();
             card.setLayout(null);
             card.setBackground(Color.WHITE);
             card.setBounds(10, y, 560, 90);
+            
             Flight f = getFlight(id);
-
+            // call your method or query
+            
             JLabel info = new JLabel("<html><b>" + f.getFlightNumber() + "</b><br>" +
                     f.getOrigin() + " → " + f.getDestination() + "<br>" +
                     "Time: " + f.getDepartureTime() + " - " + f.getArrivalTime() + "<br>" +
@@ -71,6 +74,9 @@ public class SearchResultsWindow extends JFrame {
             listPanel.add(card);
             y += 100;
         }
+        long endTime = System.currentTimeMillis();
+            System.out.println("Search result Execution time: " + (endTime - startTime) + " ms");
+
 
         listPanel.setPreferredSize(new Dimension(580, y + 10));
 

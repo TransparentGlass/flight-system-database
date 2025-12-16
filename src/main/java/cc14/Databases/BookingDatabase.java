@@ -34,9 +34,28 @@ public class BookingDatabase {
 
         // get flight ID by flight number
         int flight_id = getFlightID(booked_flight.getFlight());
-        try (Connection db = DB_connection.connect()) {
 
+        try (Connection db = DB_connection.connect()) {
+            ;
             db.setAutoCommit(false); // 🚨 START TRANSACTION
+            int availableSeats;
+            String locksql = "SELECT available_seats FROM flights_table WHERE flight_ID = ? FOR UPDATE";
+            try (PreparedStatement ps = db.prepareStatement(locksql)) {
+                ps.setInt(1, flight_id);
+                ResultSet rs = ps.executeQuery();
+
+                if (!rs.next()) {
+                    db.rollback();
+                    return null;
+                }
+
+                availableSeats = rs.getInt("available_seats");
+                if (availableSeats <= 0) {
+                    db.rollback();
+                    return null;
+                }
+
+            }
 
             String insertSql = "INSERT INTO bookings_table (User_ID, flight_ID, booking_time, status) VALUES (?, ?, ?, ?)";
             try (PreparedStatement insertStmt = db.prepareStatement(insertSql)) {
@@ -50,11 +69,10 @@ public class BookingDatabase {
 
             int newSeats = getFlight(flight_id).getAvailableSeats() - 1;
 
-            String updateSeatsSql = "UPDATE flights_table SET available_seats = ? WHERE flight_id = ?";
+            String updateSeatsSql = "UPDATE flights_table SET available_seats = available_seats - 1 WHERE flight_ID = ?";
             try (PreparedStatement seatStmt = db.prepareStatement(updateSeatsSql)) {
 
-                seatStmt.setInt(1, newSeats);
-                seatStmt.setInt(2, flight_id);
+                seatStmt.setInt(1, flight_id);
                 seatStmt.executeUpdate();
             }
 
@@ -64,6 +82,10 @@ public class BookingDatabase {
 
         } catch (SQLException e) {
             System.out.println("Error adding booking: " + e.getMessage());
+            try (Connection db = DB_connection.connect()) {
+                db.rollback();
+            } catch (SQLException ignored) {
+            }
         }
 
         return null; // failure

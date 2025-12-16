@@ -18,18 +18,17 @@ import cc14.models.Passenger;
 
 public class FlightDatabase {
 
-    // TODO: Change flights to SQL Database.
     private static Connection db;
 
     // auto assign airplanes if not specified
     private static final Integer[] AIRPLANES = {
             1001,
-1002,
-1003,
-1004,
-1005,
-1006,
-1007
+            1002,
+            1003,
+            1004,
+            1005,
+            1006,
+            1007
     };
 
     private static int randomAirplane() {
@@ -44,6 +43,7 @@ public class FlightDatabase {
             String arrivalTime,
             int seats,
             double price) {
+
         try {
             db = DB_connection.connect();
             db.setAutoCommit(false); // 🚨 START TRANSACTION
@@ -61,11 +61,11 @@ public class FlightDatabase {
                 insertStmt.setInt(8, seats);
                 insertStmt.setInt(9, randomAirplane());
                 insertStmt.executeUpdate();
-                 db.commit();
+                db.commit();
 
                 ResultSet keys = insertStmt.getGeneratedKeys();
-                
-                if (keys.next()){
+
+                if (keys.next()) {
                     return keys.getInt(1);
                 }
             }
@@ -81,36 +81,8 @@ public class FlightDatabase {
             }
         }
         return -1;
-        
+
     }
-
-    // public static synchronized Flight createFlight(
-    // String flightNumber,
-    // String origin,
-    // String destination,
-    // String departureTime,
-    // String arrivalTime,
-    // int seats,
-    // double price
-    // ) {
-    // int id = nextFlightId++;
-
-    // Flight f = new Flight(
-    // id,
-    // flightNumber,
-    // origin,
-    // destination,
-    // departureTime,
-    // arrivalTime,
-    // seats,
-    // seats,
-    // price,
-    // randomAirplane()
-    // );
-
-    // flights.add(f);
-    // return f;
-    // }
 
     public static List<Integer> getAllFlights() {
         try (Connection db = DB_connection.connect()) {
@@ -189,47 +161,22 @@ public class FlightDatabase {
         return null;
     }
 
-    public String getAirplane(int id){
+    public String getAirplane(int id) {
         try {
             db = DB_connection.connect();
             String sql = "Select airplane_name from airplanes_table where airplane_ID = ?";
-            try (PreparedStatement ps = db.prepareStatement(sql)){
+            try (PreparedStatement ps = db.prepareStatement(sql)) {
                 ps.setInt(1, id);
                 ResultSet rs = ps.executeQuery();
-                if (rs.next()){
+                if (rs.next()) {
                     return rs.getString("airplane_name");
                 }
             }
-        } catch (SQLException e){
+        } catch (SQLException e) {
             System.out.println("Error finding airplane: " + e.getMessage());
         }
         return null;
     }
-
-    // public static Flight getFlightById(int id) {
-    // for (Flight f : flights) {
-    // if (f.getFlightId() == id)
-    // return f;
-    // }
-    // return null;
-    // }
-
-    // public static Flight findFlight(String flightNumber) {
-    // for (Flight f : flights) {
-    // if (f.getFlightNumber().equalsIgnoreCase(flightNumber))
-    // return f;
-    // }
-    // return null;
-    // }
-
-    // public static List<Flight> searchByOrigin(String origin) {
-    // ArrayList<Flight> list = new ArrayList<>();
-    // for (Flight f : flights) {
-    // if (f.getOrigin().equalsIgnoreCase(origin))
-    // list.add(f);
-    // }
-    // return list;
-    // }
 
     public static List<Integer> findFlightsByOrigin(String origin) {
 
@@ -265,18 +212,35 @@ public class FlightDatabase {
             String arrivalTime,
             int totalSeats,
             double price) {
-        Flight f = getFlight(flightId);
-        if (f == null)
-            return false;
+        int currentTotal, currentAvailable, newAvailableSeats;
 
-        int alreadyBooked = f.getTotalSeats() - f.getAvailableSeats();
-        if (totalSeats < alreadyBooked)
-            return false;
-
-        int newAvailableSeats = totalSeats - alreadyBooked;
         try {
             Connection db = DB_connection.connect();
             db.setAutoCommit(false);
+
+            String locksql = "SELECT total_seats, available_seats FROM flights_table WHERE flight_ID = ? FOR UPDATE";
+
+            try (PreparedStatement ps = db.prepareStatement(locksql)) {
+                ps.setInt(1, flightId);
+                ResultSet rs = ps.executeQuery();
+
+                if (!rs.next()) {
+                    db.rollback();
+                    return false;
+                }
+
+                currentTotal = rs.getInt("total_seats");
+                currentAvailable = rs.getInt("available_seats");
+                int alreadyBooked = currentTotal - currentAvailable;
+
+                if (totalSeats < alreadyBooked) {
+                    db.rollback();
+                    return false;
+                }
+
+                newAvailableSeats = totalSeats - alreadyBooked;
+            }
+
             String updateFlightSql = "UPDATE flights_table\n" + //
                     "SET\n" + //
                     "  origin = ?,\n" + //
@@ -294,21 +258,22 @@ public class FlightDatabase {
                 ps.setString(2, destination);
                 ps.setString(3, departureTime);
                 ps.setString(4, arrivalTime);
-                ps.setInt(5, newAvailableSeats );
+                ps.setInt(5, newAvailableSeats);
                 ps.setInt(6, totalSeats);
                 ps.setDouble(7, price);
                 ps.setString(8, flightNumber);
-                
+
                 ps.setInt(9, flightId);
                 int rows = ps.executeUpdate();
 
-                if (rows == 0){
+                if (rows == 0) {
                     db.rollback();
                     return false;
                 }
             }
 
             db.commit();
+            
             return true;
 
         } catch (SQLException e) {
@@ -328,25 +293,42 @@ public class FlightDatabase {
     public static synchronized boolean deleteFlight(String flightNumber) {
         String sql = "DELETE FROM flights_table WHERE flight_number = ?";
 
-        try (Connection db = DB_connection.connect();
-                PreparedStatement ps = db.prepareStatement(sql)) {
-
+        try (Connection db = DB_connection.connect()) {
             db.setAutoCommit(false);
+            String locking = "SELECT * FROM flights_table where flight_number = ? FOR UPDATE";
+            try (PreparedStatement ps = db.prepareStatement(locking)) {
+                ps.setString(0, flightNumber);
+                ResultSet rs = ps.executeQuery();
 
-            ps.setString(1, flightNumber);
+                if (!rs.next()) {
+                    db.rollback();
+                    return false;
+                }
 
-            int rowsAffected = ps.executeUpdate();
+            }
 
-            if (rowsAffected > 0) {
-                db.commit();
-                return true;
-            } else {
-                db.rollback(); // no flight found
-                return false;
+            try (PreparedStatement ps = db.prepareStatement(sql)) {
+                ps.setString(1, flightNumber);
+
+                int rowsAffected = ps.executeUpdate();
+
+                if (rowsAffected > 0) {
+                    db.commit();
+                    return true;
+                } else {
+                    db.rollback(); // no flight found
+                    return false;
+                }
             }
 
         } catch (SQLException e) {
             e.printStackTrace();
+            if (db != null){
+                try {
+                    db.rollback();
+                } catch (SQLException ignored) {
+                }
+            }
             return false;
         }
     }

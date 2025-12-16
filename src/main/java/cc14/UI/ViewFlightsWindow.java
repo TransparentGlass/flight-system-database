@@ -45,6 +45,7 @@ public class ViewFlightsWindow extends JFrame {
         if (flights.isEmpty()) {
             area.append("No flights have been created.\n");
         } else {
+            long startTime = System.currentTimeMillis();
             for (Integer i : flights) {
                 Flight f = getFlight(i);
                 area.append("Flight No: " + f.getFlightNumber() + "\n");
@@ -55,6 +56,9 @@ public class ViewFlightsWindow extends JFrame {
                 area.append("Seats: " + f.getAvailableSeats() + "/" + f.getTotalSeats() + "\n");
                 area.append("--------------------------------------------\n");
             }
+            
+            long endTime = System.currentTimeMillis();
+            System.out.println("View flights Execution time: " + (endTime - startTime) + " ms");
         }
 
         setVisible(true);
