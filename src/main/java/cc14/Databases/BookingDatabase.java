@@ -27,24 +27,22 @@ public class BookingDatabase {
                 .toLocalDateTime()
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
-        Booking booked_flight = new Booking(p, f, ts);
-        int passenger_id = getPassengerID(booked_flight.getPassenger());
-        int flight_id = getFlightID(booked_flight.getFlight());
+        Booking bookedFlight = new Booking(p, f, ts);
+        int passengerId = getPassengerID(bookedFlight.getPassenger());
+        int flightId = getFlightID(bookedFlight.getFlight());
 
-        int maxRetries = 3;
-        int attempts = 0;
+        final int maxRetries = 3;
 
-        while (attempts < maxRetries) {
-            attempts++;
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
             try (Connection db = DB_connection.connect()) {
                 db.setAutoCommit(false);
                 db.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
 
                 // 1. Lock flight row and get available seats
                 int availableSeats;
-                String locksql = "SELECT available_seats FROM flights_table WHERE flight_ID = ? FOR UPDATE";
-                try (PreparedStatement ps = db.prepareStatement(locksql)) {
-                    ps.setInt(1, flight_id);
+                String lockSql = "SELECT available_seats FROM flights_table WHERE flight_ID = ? FOR UPDATE";
+                try (PreparedStatement ps = db.prepareStatement(lockSql)) {
+                    ps.setInt(1, flightId);
                     ResultSet rs = ps.executeQuery();
 
                     if (!rs.next()) {
@@ -62,43 +60,48 @@ public class BookingDatabase {
                 // 2. Insert booking
                 String insertSql = "INSERT INTO bookings_table (User_ID, flight_ID, booking_time, status) VALUES (?, ?, ?, ?)";
                 try (PreparedStatement insertStmt = db.prepareStatement(insertSql)) {
-                    insertStmt.setInt(1, passenger_id);
-                    insertStmt.setInt(2, flight_id);
+                    insertStmt.setInt(1, passengerId);
+                    insertStmt.setInt(2, flightId);
                     insertStmt.setString(3, ts);
                     insertStmt.setString(4, BookingStatus.ACTIVE.name());
                     insertStmt.executeUpdate();
                 }
 
-                // 3. Update available seats (use the locked row count)
+                // 3. Update available seats
                 String updateSeatsSql = "UPDATE flights_table SET available_seats = available_seats - 1 WHERE flight_ID = ?";
                 try (PreparedStatement seatStmt = db.prepareStatement(updateSeatsSql)) {
-                    seatStmt.setInt(1, flight_id);
+                    seatStmt.setInt(1, flightId);
                     seatStmt.executeUpdate();
                 }
 
                 db.commit(); // ✅ transaction successful
-                return booked_flight;
+                return bookedFlight;
 
             } catch (SQLException e) {
-                String sqlState = e.getSQLState() == null ? "" : e.getSQLState();
-
-                // Retry on deadlock (MySQL: 40001) or lock wait timeout
-                if (sqlState.equals("40001") || e.getMessage().toLowerCase().contains("deadlock")) {
-                    System.out.println("Transaction conflict, retrying attempt " + attempts + "...");
+                if (isTransientError(e)) {
+                    System.out.println("Transient error, retrying attempt " + attempt + "...");
                     try {
-                        Thread.sleep(50);
+                        // exponential backoff: 50ms * attempt number
+                        Thread.sleep(50L * attempt);
                     } catch (InterruptedException ignored) {
                     }
                     continue; // retry
                 }
 
                 e.printStackTrace();
-                return null; // fail immediately for other errors
+                return null; // permanent error, stop retrying
             }
         }
 
         System.out.println("Max retries reached, booking failed.");
         return null;
+    }
+
+    // Helper method to check for transient errors
+    private static boolean isTransientError(SQLException e) {
+        String sqlState = e.getSQLState() == null ? "" : e.getSQLState();
+        String msg = e.getMessage().toLowerCase();
+        return sqlState.equals("40001") || msg.contains("deadlock") || msg.contains("lock wait");
     }
 
     public static ArrayList<Booking> getBookingsFor(Passenger p) {

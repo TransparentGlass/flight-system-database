@@ -6,11 +6,23 @@ import javax.swing.*;
 
 import cc14.Databases.PassengerDatabase;
 import cc14.models.Passenger;
+import java.util.HashMap;
+import java.util.Map;
 
 public class PassengerLogin extends JFrame {
 
     private JTextField usernameField;
     private JPasswordField passwordField;
+
+    // Memory-only lockout system
+    private static class Attempt {
+        int count = 0;
+        long lockoutUntil = 0;
+    }
+
+    private static final Map<String, Attempt> attempts = new HashMap<>();
+    private static final int MAX_ATTEMPTS = 5;
+    private static final long LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
 
     public PassengerLogin() {
         Theme.applyNimbus();
@@ -75,14 +87,36 @@ public class PassengerLogin extends JFrame {
         String u = usernameField.getText().trim();
         String p = new String(passwordField.getPassword()).trim();
 
+        // Check lockout
+        Attempt a = attempts.getOrDefault(u, new Attempt());
+        if (System.currentTimeMillis() < a.lockoutUntil) {
+            long minutesLeft = (a.lockoutUntil - System.currentTimeMillis()) / 60000 + 1;
+            JOptionPane.showMessageDialog(this,
+                    "Account locked. Try again in " + minutesLeft + " minute(s).",
+                    "Login Locked",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
         int passenger = PassengerDatabase.passwordCheck(u, p);
         if (passenger == -1) {
+            // Record failed attempt
+            a.count++;
+            if (a.count >= MAX_ATTEMPTS) {
+                a.lockoutUntil = System.currentTimeMillis() + LOCKOUT_DURATION;
+                a.count = 0; // reset after lockout
+            }
+            attempts.put(u, a);
+
             JOptionPane.showMessageDialog(this,
                     "Incorrect username or password.",
                     "Login Failed",
                     JOptionPane.ERROR_MESSAGE);
             return;
         }
+
+        // Successful login → reset attempts
+        attempts.remove(u);
 
         JOptionPane.showMessageDialog(this, "Login successful!");
         dispose();
