@@ -5,6 +5,8 @@ import javax.swing.*;
 import cc14.Databases.FlightDatabase;
 import cc14.models.Flight;
 
+import static cc14.Databases.BookingDatabase.getFlight;
+
 import java.awt.*;
 import java.util.ArrayList;
 
@@ -38,12 +40,13 @@ public class ViewFlightsWindow extends JFrame {
 
         closeBtn.addActionListener(e -> dispose());
 
-        java.util.List<Flight> flights = FlightDatabase.getAllFlights();
+        java.util.List<Integer> flights = FlightDatabase.getAllFlights();
 
         if (flights.isEmpty()) {
             area.append("No flights have been created.\n");
         } else {
-            for (Flight f : flights) {
+            for (Integer i : flights) {
+                Flight f = getFlight(i);
                 area.append("Flight No: " + f.getFlightNumber() + "\n");
                 area.append("From: " + f.getOrigin() + "\n");
                 area.append("To:   " + f.getDestination() + "\n");

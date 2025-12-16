@@ -97,7 +97,8 @@ public class EditFlightWindow extends JFrame {
         add(saveBtn);
 
         searchBtn.addActionListener(e -> {
-            target = FlightDatabase.findFlight(findField.getText().trim());
+            int id = FlightDatabase.findFlightByFlightNum(findField.getText().trim());
+            target = FlightDatabase.getFlight(id);
 
             if (target == null) {
                 JOptionPane.showMessageDialog(this, "Flight not found.");

@@ -1,5 +1,7 @@
 package cc14.UI;
 
+import static cc14.Databases.BookingDatabase.getFlight;
+
 import javax.swing.*;
 
 import cc14.Databases.FlightDatabase;
@@ -40,11 +42,13 @@ public class AssignAirplaneWindow extends JFrame {
         add(assignBtn);
 
         assignBtn.addActionListener(e -> {
-            Flight f = FlightDatabase.findFlight(flightField.getText().trim());
-            if (f == null) {
+            int i = FlightDatabase.findFlightByFlightNum(flightField.getText().trim());
+            if (i == -1) {
                 JOptionPane.showMessageDialog(this, "Flight not found.");
                 return;
             }
+
+            Flight f = getFlight(i);
 
             f.setAirplane((String) planeBox.getSelectedItem());
             JOptionPane.showMessageDialog(this, "Airplane Assigned!");

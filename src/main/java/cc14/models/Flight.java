@@ -12,9 +12,16 @@ public class Flight {
     private double price;
     private String airplane;        
 
-    public Flight(int flightId, String flightNumber, String origin, String destination,
-                  String departureTime, String arrivalTime,
-                  int totalSeats, int availableSeats, double price, String airplane) {
+    public Flight(int flightId, 
+        String flightNumber, 
+        String origin, 
+        String destination,
+        String departureTime,
+        String arrivalTime,
+        int totalSeats,
+        int availableSeats,
+        double price,
+        String airplane) {
 
         this.flightId = flightId;
         this.flightNumber = flightNumber;
@@ -29,6 +36,7 @@ public class Flight {
     }
 
     public int getFlightId() { return flightId; }
+    public void setFlightID(int id){this.flightId = id;}
 
     public String getFlightNumber() { return flightNumber; }
     public void setFlightNumber(String s) { this.flightNumber = s; }

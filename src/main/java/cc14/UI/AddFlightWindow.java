@@ -82,7 +82,7 @@ public class AddFlightWindow extends JFrame {
 
         addBtn.addActionListener(e -> {
             try {
-                FlightDatabase.addFlight(
+                FlightDatabase.createFlight(
                         fNoField.getText().trim(),
                         originField.getText().trim(),
                         destField.getText().trim(),

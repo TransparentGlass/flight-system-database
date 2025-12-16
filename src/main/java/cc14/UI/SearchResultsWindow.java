@@ -6,6 +6,8 @@ import cc14.Databases.FlightDatabase;
 import cc14.models.Flight;
 import cc14.models.Passenger;
 
+import static cc14.Databases.BookingDatabase.getFlight;
+
 import java.awt.*;
 import java.util.List;
 
@@ -42,13 +44,14 @@ public class SearchResultsWindow extends JFrame {
         scroll.setBounds(50, 80, 600, 320);
         bg.add(scroll);
 
-        List<Flight> flights = FlightDatabase.searchByOrigin(origin);
+        List<Integer> flights = FlightDatabase.findFlightsByOrigin(origin);
         int y = 10;
-        for (Flight f : flights) {
+        for (int id : flights) {
             JPanel card = new JPanel();
             card.setLayout(null);
             card.setBackground(Color.WHITE);
             card.setBounds(10, y, 560, 90);
+            Flight f = getFlight(id);
 
             JLabel info = new JLabel("<html><b>" + f.getFlightNumber() + "</b><br>" +
                     f.getOrigin() + " → " + f.getDestination() + "<br>" +
