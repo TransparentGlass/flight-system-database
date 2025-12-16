@@ -24,9 +24,8 @@ public class BookingDatabase {
     // this fails to function due to flights (other than MNL101) not being added yet
     public static Booking createBooking(Passenger p, Flight f) {
         String ts = new Timestamp(System.currentTimeMillis())
-        .toLocalDateTime()
-        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-
+                .toLocalDateTime()
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
         Booking booked_flight = new Booking(p, f, ts);
 
@@ -35,28 +34,33 @@ public class BookingDatabase {
 
         // get flight ID by flight number
         int flight_id = getFlightID(booked_flight.getFlight());
-        try {
-            
-            Connection Database = DB_connection.connect();
+        try (Connection db = DB_connection.connect()) {
 
-            String sql = "INSERT INTO bookings_table (User_ID, flight_ID, booking_time, status) VALUES (?, ?, ?, ?)";
-            String availableSeats_sql = "UPDATE flights_table SET available_seats = ? WHERE flight_id = ?";
-            PreparedStatement pstmt = Database.prepareStatement(sql);
-            pstmt.setInt(1, passenger_id);
-            pstmt.setInt(2, flight_id);
-            pstmt.setString(3, ts);
+            db.setAutoCommit(false); // 🚨 START TRANSACTION
 
-            pstmt.setString(4, BookingStatus.ACTIVE.name());
-            pstmt.executeUpdate();
-            System.out.println("Booking added successfully.");
+            String insertSql = "INSERT INTO bookings_table (User_ID, flight_ID, booking_time, status) VALUES (?, ?, ?, ?)";
+            try (PreparedStatement insertStmt = db.prepareStatement(insertSql)) {
 
-            pstmt = Database.prepareStatement(availableSeats_sql);
-            pstmt.setInt(1, getFlight(flight_id).getAvailableSeats() - 1);
-            pstmt.setInt(2, flight_id);
-            pstmt.executeUpdate();
-            System.out.println("Available seats--" + "AVAIALBLE SEATS = " + (getFlight(flight_id).getAvailableSeats() - 1));
+                insertStmt.setInt(1, passenger_id);
+                insertStmt.setInt(2, flight_id);
+                insertStmt.setString(3, ts);
+                insertStmt.setString(4, BookingStatus.ACTIVE.name());
+                insertStmt.executeUpdate();
+            }
 
-            return booked_flight; // success
+            int newSeats = getFlight(flight_id).getAvailableSeats() - 1;
+
+            String updateSeatsSql = "UPDATE flights_table SET available_seats = ? WHERE flight_id = ?";
+            try (PreparedStatement seatStmt = db.prepareStatement(updateSeatsSql)) {
+
+                seatStmt.setInt(1, newSeats);
+                seatStmt.setInt(2, flight_id);
+                seatStmt.executeUpdate();
+            }
+
+            db.commit(); // ✅ SUCCESS
+
+            return booked_flight;
 
         } catch (SQLException e) {
             System.out.println("Error adding booking: " + e.getMessage());
@@ -123,6 +127,7 @@ public class BookingDatabase {
     }
 
     public static boolean deleteBooking(int reservation_ID) {
+        // TODO: implement delete booking
         return false;
     }
 
